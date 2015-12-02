@@ -1,12 +1,13 @@
 #!/bin/bash
-DEFAULT_WARNING_THRESHOLD=93;
-DEFAULT_CRITICAL_THRESHOLD=96;
-OPTIONS='u:w:c:h';
-
 declare -i CRITICAL_THRESHOLD;
 declare -i WARNING_THRESHOLD;
-unset URL;
-
+declare -r DEFAULT_WARNING_THRESHOLD=93;
+declare -r DEFAULT_CRITICAL_THRESHOLD=96;
+declare -r OPTIONS='u:w:c:h';
+WARNING_MESSAGE="WARNING: Heap usage is over ${WARNING_THRESHOLD}%";
+CRITICAL_MESSAGE="CRITICAL: Heap usage is over ${CRITICAL_THRESHOLD}%";
+URL="";
+#usage
 USAGE="$0 -u <url> [-h -w <n> -c <n>] \n
 \n
 \t	where:\n
@@ -16,6 +17,7 @@ USAGE="$0 -u <url> [-h -w <n> -c <n>] \n
 \t	-w\t	warning theshold  % (default=${DEFAULT_WARNING_THRESHOLD})\n
 \t	-c\t	critical theshold % (default=${DEFAULT_CRITICAL_THRESHOLD})\n
 ";
+#parse script input parameters
 parse_arguments () {
 	#parse options
 	while getopts ${OPTIONS} opt; do
@@ -55,6 +57,7 @@ parse_arguments () {
 		exit 1;
 	fi;
 }
+#get integer percentage of argument1 compared to argument2
 calculate (){
 	if [ $# -ne 2 ];then
 		echo "ERROR: $0 wrong number of input parameters" >&2;
@@ -64,18 +67,44 @@ calculate (){
 	max_value=$2;
 	echo $(echo "scale=0;${current_value}*100 / ${max_value}"|bc -l) >&1;
 }
-
+#get required heap values from curl responce
 get_heap_values () {
 	if [ $# -ne 1 ];then
 		echo "ERROR: $0 wrong number of input parameters" >&2;
 		exit 1;
 	fi;
-	
+	L_URL=$1;
+	heap_values=$(curl -s ${L_URL} |sed 's/,/\n/g'|egrep -e 'jvm.memory.heap.(max|used)');
+	max_heap=$(echo ${heap_values}|sed 's/ /\n/g'|grep max|sed 's/[^0-9]//g');
+	used_heap=$(echo ${heap_values}|sed 's/ /\n/g'|grep used|sed 's/[^0-9]//g');
+	echo "${used_heap} ${max_heap}" >&1;
 }
-
+#generate message depending on input percent and configured threshold
+validate_percent (){
+	if [ $# -ne 1 ];then
+		echo "ERROR: $0 wrong number of input parameters" >&2;
+		exit 1;
+	fi;
+	L_HEAP_USAGE_PERCENT=$1;
+	if [ ${L_HEAP_USAGE_PERCENT} -ge ${WARNING_THRESHOLD} ] && [ ${L_HEAP_USAGE_PERCENT} -lt ${CRITICAL_THRESHOLD} ]
+	then
+		echo ${WARNING_MESSAGE} >&1;
+	elif [ ${L_HEAP_USAGE_PERCENT} -ge ${CRITICAL_THRESHOLD} ]
+	then
+		echo ${CRITICAL_MESSAGE} >&1;
+	fi
+}
+#begin processing
 parse_arguments $@;
-calculate 21423.1234 23423.454;
+HEAP_VALUES=$(get_heap_values $URL);
+HEAP_USAGE_PERCENT=$(calculate ${HEAP_VALUES});
+validate_percent ${HEAP_USAGE_PERCENT};
 
 
 
-#curl -s '${URL}' |sed 's/,/\n/g'|egrep -e 'jvm.memory.heap.(max|used)';
+
+
+
+
+
+
