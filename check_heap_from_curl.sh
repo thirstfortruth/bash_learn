@@ -4,9 +4,6 @@ declare -i WARNING_THRESHOLD;
 declare -r DEFAULT_WARNING_THRESHOLD=93;
 declare -r DEFAULT_CRITICAL_THRESHOLD=96;
 declare -r OPTIONS='u:w:c:h';
-WARNING_MESSAGE="WARNING: Heap usage is over ${WARNING_THRESHOLD}%";
-CRITICAL_MESSAGE="CRITICAL: Heap usage is over ${CRITICAL_THRESHOLD}%";
-URL="";
 #usage
 USAGE="$0 -u <url> [-h -w <n> -c <n>] \n
 \n
@@ -88,10 +85,10 @@ validate_percent (){
 	L_HEAP_USAGE_PERCENT=$1;
 	if [ ${L_HEAP_USAGE_PERCENT} -ge ${WARNING_THRESHOLD} ] && [ ${L_HEAP_USAGE_PERCENT} -lt ${CRITICAL_THRESHOLD} ]
 	then
-		echo ${WARNING_MESSAGE} >&1;
+		echo "WARNING: Heap usage is ${L_HEAP_USAGE_PERCENT}%!" >&1;
 	elif [ ${L_HEAP_USAGE_PERCENT} -ge ${CRITICAL_THRESHOLD} ]
 	then
-		echo ${CRITICAL_MESSAGE} >&1;
+		echo "CRITICAL: Heap usage is ${L_HEAP_USAGE_PERCENT}%!" >&1;
 	fi
 }
 #begin processing
