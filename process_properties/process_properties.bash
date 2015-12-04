@@ -15,7 +15,7 @@ validate_properties () {
 overwrite_db_properties () {
 
 }
-
+#comment
 overwrite_file_properties () {
 
 }
